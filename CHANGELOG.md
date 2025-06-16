@@ -53,11 +53,11 @@ All notable changes to the Azure AI Foundry & Machine Learning Package Allowlist
 - **Example Scripts**: Comprehensive example usage patterns and best practices
 - **Verbose Logging**: Enhanced debugging capabilities with `--verbose` flag
 
-### 🔒 **Azure ML Workspace Support (Fully Maintained)**
+### 🔒 **Azure ML Workspace Support **
 
 #### Backward Compatibility
-- **Complete Feature Parity**: All existing Azure ML functionality preserved
-- **Legacy Workspace Support**: Full compatibility with existing Azure ML workspaces
+- **Complete Feature Parity**: All existing Azure ML functionality
+- **Workspace Support**: Full compatibility with existing Azure ML workspaces
 - **Migration Path**: Easy upgrade path to AI Foundry when ready
 - **No Breaking Changes**: Existing scripts and automation continue to work
 
