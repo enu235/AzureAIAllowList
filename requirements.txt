@@ -1,0 +1,13 @@
+azure-cli
+azure-ai-ml
+azure-identity
+azure-mgmt-machinelearningservices
+click
+pyyaml
+toml
+packaging
+requests
+colorama
+tabulate
+validators
+urllib3

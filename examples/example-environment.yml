@@ -1,0 +1,61 @@
+# Example environment.yml for testing the Azure ML Package URL Allowlist Tool
+# This file demonstrates conda package discovery with mixed conda and pip packages
+
+name: azureml-example-env
+
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+
+dependencies:
+  # Base Python
+  - python=3.9
+
+  # Conda packages
+  - numpy>=1.21
+  - scipy>=1.7
+  - pandas>=1.3
+  - matplotlib>=3.5
+  - seaborn>=0.11
+  - scikit-learn>=1.0
+  - jupyter>=1.0
+  - notebook>=6.4
+
+  # PyTorch from conda
+  - pytorch>=1.10
+  - torchvision>=0.11
+  - torchaudio>=0.10
+
+  # Additional conda packages
+  - openpyxl>=3.0
+  - pyarrow>=6.0
+  - statsmodels>=0.13
+
+  # Pip packages
+  - pip
+  - pip:
+    # TensorFlow (usually better from pip)
+    - tensorflow>=2.8.0
+    - keras>=2.8.0
+    
+    # Azure ML SDK
+    - azureml-core>=1.40.0
+    - azureml-sdk>=1.40.0
+    
+    # MLflow
+    - mlflow>=1.20.0
+    
+    # Additional pip packages
+    - requests>=2.26.0
+    - beautifulsoup4>=4.10.0
+    - Pillow>=8.3.0
+    - opencv-python>=4.5.0
+    - plotly>=5.0.0
+    - spacy>=3.4.0
+    - nltk>=3.6.0
+    
+    # Development tools
+    - black>=22.0.0
+    - pytest>=7.0.0
+    - ipykernel>=6.0.0 

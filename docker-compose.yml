@@ -1,0 +1,47 @@
+services:
+  azure-ai-foundry-package-tool:
+    build: .
+    platform: linux/amd64  # Force x86_64 architecture
+    container_name: azure-ai-foundry-package-tool
+    volumes:
+      # Mount current directory for input files
+      - ./input:/workspace/input
+      # Mount output directory
+      - ./output:/workspace/output
+      # Mount Azure CLI credentials (if running authenticated)
+      - ~/.azure:/home/azureml-user/.azure:ro
+    environment:
+      - AZURE_CLI_DISABLE_CONNECTION_VERIFICATION=1
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    
+    # Example command for Azure AI Foundry Hub (recommended)
+    command: >
+      python main.py 
+      --hub-type ai-foundry
+      --workspace-name "your-ai-foundry-hub" 
+      --resource-group "your-rg" 
+      --requirements-file "/workspace/input/requirements.txt" 
+      --include-vscode
+      --include-huggingface
+      --output-file "/workspace/output/azure-cli-commands.sh"
+
+  # Interactive mode for development/debugging
+  azure-ai-foundry-package-tool-interactive:
+    build: .
+    platform: linux/amd64  # Force x86_64 architecture
+    container_name: azure-ai-foundry-package-tool-interactive
+    volumes:
+      - ./input:/workspace/input
+      - ./output:/workspace/output
+      - ~/.azure:/home/azureml-user/.azure:ro
+    environment:
+      - AZURE_CLI_DISABLE_CONNECTION_VERIFICATION=1
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+# Create directories for input/output if they don't exist
+# Run: mkdir -p input output before running docker-compose 
