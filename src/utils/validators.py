@@ -208,6 +208,31 @@ def validate_azure_resource_group_name(name: str) -> bool:
     pattern = r'^[a-zA-Z0-9._()-]+$'
     return bool(re.match(pattern, name))
 
+def validate_workspace_access(workspace_name: str, resource_group: str, 
+                            subscription_id: Optional[str] = None) -> bool:
+    """Validate user has access to the workspace"""
+    try:
+        cmd = ['az', 'ml', 'workspace', 'show', 
+               '--name', workspace_name, 
+               '--resource-group', resource_group]
+        if subscription_id:
+            cmd.extend(['--subscription', subscription_id])
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        return result.returncode == 0
+    except Exception:
+        return False
+
+def validate_required_permissions() -> Dict[str, bool]:
+    """Check for required RBAC permissions"""
+    # This will be expanded in later phases
+    permissions = {
+        'read_workspace': True,  # Placeholder
+        'read_network': True,    # Placeholder
+        'read_resources': True   # Placeholder
+    }
+    return permissions
+
 def get_system_info() -> Dict[str, str]:
     """
     Get system information for troubleshooting.

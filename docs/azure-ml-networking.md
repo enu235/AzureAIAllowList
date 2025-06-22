@@ -7,10 +7,10 @@ This comprehensive guide focuses on Azure Machine Learning workspace network con
 ## ✨ **Full Azure ML Support & Backward Compatibility**
 
 This tool provides complete support for Azure Machine Learning workspaces with:
-- 🏗️ **Legacy Workspace Support**: Full compatibility with existing Azure ML workspaces
+- 🏗️ **Complete Workspace Support**: Full compatibility with Azure ML workspaces
 - 🔒 **All Network Modes**: Managed VNet, customer-managed VNet, and hybrid configurations  
 - 📦 **Complete Package Discovery**: All package manager formats supported
-- 🔄 **Easy Migration Path**: Seamless upgrade to AI Foundry when ready
+- 🔄 **Flexible Integration**: Seamless integration with other Azure services
 - 🛠️ **Enterprise Integration**: Existing workflows and automation continue to work
 
 ## Table of Contents

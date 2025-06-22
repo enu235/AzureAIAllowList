@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Azure ML Package URL Allowlist Tool - Setup Script
-# This script helps set up the development environment
+# Azure AI Foundry & Machine Learning Allowlist & Connectivity Analysis Tool - Setup Script
+# This script helps set up the development environment for the enhanced tool
 
 set -e
 
-echo "🚀 Setting up Azure ML Package URL Allowlist Tool"
-echo "================================================="
+echo "🚀 Setting up Azure AI Foundry & ML Allowlist & Connectivity Analysis Tool"
+echo "============================================================================"
 echo ""
 
 # Create output and input directories
@@ -14,6 +14,7 @@ echo "📁 Creating directories..."
 mkdir -p output
 mkdir -p input
 mkdir -p logs
+mkdir -p connectivity-reports
 
 echo "✅ Directories created"
 echo ""
@@ -24,6 +25,7 @@ python3 --version
 if ! command -v python3.12 &> /dev/null; then
     echo "⚠️  Python 3.12 not found. This tool requires Python 3.12+"
     echo "   You can continue with your current Python version, but some features may not work optimally."
+    echo "   For optimal performance, especially for connectivity analysis, use Python 3.12+"
 fi
 echo ""
 
@@ -60,7 +62,7 @@ if command -v az &> /dev/null; then
         echo "✅ Azure ML extension found"
     else
         echo "⚠️  Azure ML extension not found. Installing..."
-        az extension add --name ml
+        az extension add --name ml --yes
         echo "✅ Azure ML extension installed"
     fi
 else
@@ -72,7 +74,7 @@ else
     echo "  Windows: https://aka.ms/installazurecliwindows"
     echo ""
     echo "After installing Azure CLI, run:"
-    echo "  az extension add --name ml"
+    echo "  az extension add --name ml --yes"
     echo "  az login"
 fi
 echo ""
@@ -102,6 +104,20 @@ else
 fi
 echo ""
 
+# Check Docker for containerized usage
+echo "🐳 Checking Docker..."
+if command -v docker &> /dev/null; then
+    echo "✅ Docker found: $(docker --version)"
+    if command -v docker-compose &> /dev/null; then
+        echo "✅ Docker Compose found: $(docker-compose --version)"
+    else
+        echo "⚠️  Docker Compose not found (optional for containerized usage)"
+    fi
+else
+    echo "ℹ️  Docker not found (optional for containerized usage)"
+fi
+echo ""
+
 # Test the tool
 echo "🧪 Testing the tool..."
 python main.py --help
@@ -109,15 +125,48 @@ echo ""
 
 echo "🎉 Setup complete!"
 echo ""
+echo "========================================="
+echo "🔮 AZURE AI FOUNDRY & ML ANALYSIS TOOL"
+echo "========================================="
+echo ""
+echo "This tool supports two main actions:"
+echo "1. 📦 Package Allowlist Generation"
+echo "2. 🔍 Connectivity Analysis"
+echo ""
+echo "Hub Types Supported:"
+echo "• Azure AI Foundry Hub (recommended)"
+echo "• Azure Machine Learning Workspace"
+echo ""
 echo "Next steps:"
 echo "1. Activate the virtual environment: source azureml-package-tool/bin/activate"
 echo "2. Configure Azure CLI: az login"
 echo "3. Set your subscription: az account set --subscription \"your-subscription-id\""
 echo "4. Run examples: ./examples/run-examples.sh"
 echo ""
-echo "Quick start:"
-echo "python main.py --workspace-name \"your-workspace\" --resource-group \"your-rg\" --requirements-file \"examples/example-requirements.txt\""
+echo "Quick start examples:"
 echo ""
-echo "For Docker usage:"
-echo "docker build -t azureml-package-tool ."
-echo "docker-compose up azureml-package-tool-interactive" 
+echo "📦 Package Allowlist Generation:"
+echo "python main.py \\"
+echo "  --action package-allowlist \\"
+echo "  --hub-type ai-foundry \\"
+echo "  --workspace-name \"your-workspace\" \\"
+echo "  --resource-group \"your-rg\" \\"
+echo "  --requirements-file \"examples/example-requirements.txt\""
+echo ""
+echo "🔍 Connectivity Analysis:"
+echo "python main.py \\"
+echo "  --action analyze-connectivity \\"
+echo "  --hub-type ai-foundry \\"
+echo "  --workspace-name \"your-workspace\" \\"
+echo "  --resource-group \"your-rg\""
+echo ""
+echo "🐳 Docker usage:"
+echo "docker build -t azure-ai-allowlist-tool ."
+echo "docker-compose up azure-ai-allowlist-tool"
+echo ""
+echo "📚 For more examples and advanced usage:"
+echo "• Check the examples/ directory"
+echo "• Read the documentation in docs/"
+echo "• Run: python main.py --help"
+echo ""
+echo "🚨 Remember to review the disclaimer when using this tool!" 

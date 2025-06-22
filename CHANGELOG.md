@@ -35,7 +35,7 @@ All notable changes to the Azure AI Foundry & Machine Learning Package Allowlist
 - **Improved Conda Support**: Enhanced conda channel detection and mapping
 
 #### Docker & Container Support
-- **Updated Container Names**: Renamed to `azure-ai-foundry-package-tool` for clarity
+- **Updated Container Names**: Renamed to `azure-ai-allowlist-tool` with connectivity analysis support
 - **Improved Docker Examples**: AI Foundry-focused container examples
 - **Cross-platform Support**: Better ARM64/x86_64 compatibility
 
@@ -127,7 +127,7 @@ All notable changes to the Azure AI Foundry & Machine Learning Package Allowlist
 
 #### For Docker Users
 - Update `docker-compose.yml` service names if customized
-- New container names: `azure-ai-foundry-package-tool*`
+- New container names: `azure-ai-allowlist-tool*` with connectivity analysis service
 - All functionality remains the same
 
 ### 🎯 **Future Roadmap**

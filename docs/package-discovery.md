@@ -315,7 +315,7 @@ graph TD
     H --> J
     I --> J
     
-    J --> K[Recommend Azure Storage Migration]
+    J --> K[Recommend Azure Storage Integration]
     
     style D fill:#ffcccc
     style E fill:#ffcccc
@@ -358,8 +358,8 @@ When private repositories are detected:
 
 1. **Backward Compatibility**: Tool maintains full Azure ML support
 2. **Selective Features**: Only include needed integrations
-3. **Legacy Support**: Continues to work with existing configurations
-4. **Migration Path**: Easy upgrade to AI Foundry when ready
+3. **Existing Support**: Continues to work with existing configurations
+4. **Integration Path**: Easy integration with existing workflows
 
 ## Troubleshooting Discovery Issues
 

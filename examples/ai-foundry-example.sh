@@ -9,10 +9,11 @@
 set -e
 
 # Configuration Variables
-WORKSPACE_NAME="my-ai-foundry-hub"
-RESOURCE_GROUP="my-resource-group"
-SUBSCRIPTION_ID="your-subscription-id"
-REQUIREMENTS_FILE="requirements.txt"
+WORKSPACE_NAME="${WORKSPACE_NAME:-my-ai-foundry-hub}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-my-resource-group}"
+SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-your-subscription-id}"
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-requirements.txt}"
+CONDA_ENV="${CONDA_ENV:-environment.yml}"
 
 echo "🔮 Azure AI Foundry & ML Package Allowlist Tool - Example Usage"
 echo "============================================================="
@@ -46,7 +47,7 @@ python main.py \
   --resource-group "$RESOURCE_GROUP" \
   --subscription-id "$SUBSCRIPTION_ID" \
   --requirements-file "$REQUIREMENTS_FILE" \
-  --conda-env "environment.yml" \
+  --conda-env "$CONDA_ENV" \
   --include-vscode \
   --include-huggingface \
   --include-prompt-flow \

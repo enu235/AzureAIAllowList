@@ -303,6 +303,19 @@ class PowerShellFormatter(BaseOutputFormatter):
         }
         return domain_mapping.get(clean_domain, f"package-domain-{index:02d}")
 
+class OutputFormatter:
+    """Enhanced output formatter for all tool outputs"""
+    
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
+    
+    def format_connectivity_summary(self, analysis_results: Dict) -> str:
+        """Format connectivity analysis summary for CLI output"""
+        from .connectivity.summary_generator import SummaryReportGenerator
+        
+        generator = SummaryReportGenerator(analysis_results)
+        return generator.generate_cli_summary()
+
 class OutputFormatterFactory:
     """Factory to create appropriate output formatter."""
     

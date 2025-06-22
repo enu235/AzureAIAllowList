@@ -25,11 +25,16 @@ from src.utils.logger import setup_logger
 from src.utils.validators import validate_azure_cli
 from src.config.messages import MessageTemplates
 from src.config.hub_features import HubFeatureManager
+from src.connectivity.connectivity_analyzer import ConnectivityAnalyzer
 
 # Setup logging
 logger = setup_logger(__name__)
 
 @click.command()
+@click.option('--action', 
+              type=click.Choice(['package-allowlist', 'analyze-connectivity'], case_sensitive=False),
+              default='package-allowlist',
+              help='Action to perform: package-allowlist (default) or analyze-connectivity')
 @click.option('--workspace-name', '-w', required=True, 
               help='Azure ML workspace or AI Foundry hub name')
 @click.option('--resource-group', '-g', required=True,
@@ -70,7 +75,7 @@ logger = setup_logger(__name__)
               help='Include Prompt Flow service FQDNs (AI Foundry)')
 @click.option('--custom-fqdns', 
               help='Comma-separated list of additional custom FQDNs to include')
-def main(workspace_name: str, resource_group: str, subscription_id: Optional[str],
+def main(action: str, workspace_name: str, resource_group: str, subscription_id: Optional[str],
          hub_type: str, requirements_file: Optional[str], conda_env: Optional[str],
          pyproject_toml: Optional[str], pipfile: Optional[str],
          output_format: str, include_transitive: bool, platform: str,
@@ -83,7 +88,7 @@ def main(workspace_name: str, resource_group: str, subscription_id: Optional[str
     Discovers package download URLs and generates Azure AI Foundry hub/Azure ML workspace 
     outbound rules for secured environments.
     
-    Supports both Azure AI Foundry Hubs (recommended) and Azure Machine Learning workspaces.
+    Supports both Azure AI Foundry Hubs and Azure Machine Learning workspaces.
     
     🚨 DISCLAIMER: This tool is provided "AS IS" without warranty of any kind, express or implied. 
     You use this tool and implement its recommendations at your own risk. Always review and test 
@@ -94,6 +99,49 @@ def main(workspace_name: str, resource_group: str, subscription_id: Optional[str
         logger.setLevel('DEBUG')
     
     try:
+        # Route based on action
+        if action == 'analyze-connectivity':
+            # Validate minimum required parameters for connectivity analysis
+            if not workspace_name or not resource_group:
+                click.echo("❌ Workspace name and resource group are required for connectivity analysis.", err=True)
+                sys.exit(1)
+            
+            # Create and run connectivity analyzer
+            click.echo(f"🔍 Starting connectivity analysis for {hub_type} workspace: {workspace_name}")
+            click.echo()
+            
+            analyzer = ConnectivityAnalyzer(
+                workspace_name=workspace_name,
+                resource_group=resource_group,
+                subscription_id=subscription_id,
+                hub_type=hub_type.lower(),
+                verbose=verbose
+            )
+            
+            result = analyzer.analyze()
+            
+            if result.success:
+                # Display comprehensive summary using Phase 4 reporting
+                from src.output_formatter import OutputFormatter
+                formatter = OutputFormatter(verbose=verbose)
+                summary = formatter.format_connectivity_summary(result.data)
+                click.echo(summary)
+                
+                click.echo(f"\n✅ {result.message}")
+                
+                # Report location
+                if 'report_location' in result.data:
+                    click.echo(f"\n📄 Detailed report saved to: {result.data['report_location']}")
+                    click.echo(f"   JSON data saved to: {result.data['report_location'].replace('.md', '.json')}")
+            else:
+                click.echo(f"\n❌ {result.message}", err=True)
+                if result.error:
+                    click.echo(f"Error: {result.error}", err=True)
+                sys.exit(1)
+            
+            return
+        
+        # Execute existing package allowlist functionality
         # Validate Azure CLI setup
         if not dry_run and not validate_azure_cli():
             click.echo("❌ Azure CLI validation failed. Please run 'az login' and install the ML extension.", err=True)

@@ -396,7 +396,7 @@ graph TD
 
 ## Azure ML Workspace Issues
 
-### Issue: Legacy Workspace Configuration
+### Issue: Existing Workspace Configuration
 
 **Symptoms:**
 ```
@@ -421,13 +421,12 @@ Workspace created before managed VNet support
      [other options]
    ```
 
-3. **Migration Guidance:**
+3. **Alternative Configuration:**
    ```bash
-   # Consider creating new AI Foundry Hub
-   az ml workspace create \
-     --name new-ai-foundry-hub \
-     --resource-group your-rg \
-     --kind "hub"
+   # Verify workspace configuration
+   az ml workspace show \
+     --name your-workspace \
+     --resource-group your-rg
    ```
 
 ## Docker Container Issues
@@ -444,13 +443,13 @@ ERROR: failed to solve: failed to compute cache key
 1. **Clear Docker Cache:**
    ```bash
    docker system prune -a
-   docker build --no-cache -t azure-ai-foundry-package-tool .
+   docker build --no-cache -t azure-ai-allowlist-tool .
    ```
 
 2. **Platform Compatibility:**
    ```bash
    # For ARM Macs
-   docker build --platform linux/amd64 -t azure-ai-foundry-package-tool .
+   docker build --platform linux/amd64 -t azure-ai-allowlist-tool .
    ```
 
 3. **Check Dockerfile:**
@@ -484,7 +483,7 @@ FileNotFoundError: [Errno 2] No such file or directory: '/workspace/input/requir
 
 3. **Interactive Debugging:**
    ```bash
-   docker-compose run azure-ai-foundry-package-tool-interactive
+   docker-compose run azure-ai-allowlist-tool-interactive
    ls -la /workspace/input/
    ```
 
@@ -542,11 +541,189 @@ MemoryError: Unable to allocate array
    ```yaml
    # In docker-compose.yml
    services:
-     azure-ai-foundry-package-tool:
+     azure-ai-allowlist-tool:
        deploy:
          resources:
            limits:
              memory: 4G
+   ```
+
+## Connectivity Analysis Issues
+
+### Analysis Fails to Start
+
+**Error**: `Azure CLI not found or ML extension not installed`
+
+**Solution**:
+```bash
+# Install Azure CLI
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Install ML extension
+az extension add -n ml -y
+```
+
+### Permission Denied Errors
+
+**Error**: `Failed to get workspace info: AuthorizationFailed`
+
+**Cause**: Insufficient permissions to read workspace or resources
+
+**Solution**:
+1. Verify your account has Reader access:
+   ```bash
+   az role assignment list --assignee $(az account show --query user.name -o tsv)
+   ```
+
+2. Request appropriate access:
+   - Workspace Reader
+   - Resource Group Reader
+   - Network Contributor (for detailed network analysis)
+
+### Timeout During Analysis
+
+**Error**: `Network analysis failed: Request timeout`
+
+**Possible Causes**:
+- Large number of resources
+- Network connectivity issues
+- Azure API throttling
+
+**Solutions**:
+1. Increase timeout in environment:
+   ```bash
+   export AZURE_CLI_TIMEOUT=60
+   ```
+
+2. Run with verbose mode to identify slow operations:
+   ```bash
+   python main.py --action analyze-connectivity --verbose
+   ```
+
+3. Check Azure CLI configuration:
+   ```bash
+   az account show
+   az config list
+   ```
+
+### Missing Resources in Report
+
+**Symptom**: Some resources not appearing in analysis
+
+**Possible Causes**:
+- Resources in different subscriptions
+- Deleted but referenced resources
+- Permission issues on specific resources
+
+**Diagnostic Steps**:
+1. Check resource existence:
+   ```bash
+   az resource show --ids <resource-id>
+   ```
+
+2. Verify permissions on specific resource:
+   ```bash
+   az role assignment list --scope <resource-id>
+   ```
+
+3. List all resources in resource group:
+   ```bash
+   az resource list --resource-group <resource-group>
+   ```
+
+### Report Generation Fails
+
+**Error**: `Report generation failed: [Errno 13] Permission denied`
+
+**Solution**:
+1. Check write permissions in current directory
+2. Create reports directory manually:
+   ```bash
+   mkdir -p connectivity-reports
+   chmod 755 connectivity-reports
+   ```
+
+3. Use different output directory:
+   ```bash
+   export CONNECTIVITY_REPORTS_DIR="/tmp/connectivity-reports"
+   python main.py --action analyze-connectivity
+   ```
+
+### Mermaid Diagrams Not Rendering
+
+**Symptom**: Diagrams show as code blocks in Markdown viewer
+
+**Solution**:
+1. Use a Markdown viewer that supports Mermaid:
+   - VS Code with Mermaid extension
+   - GitHub (automatic rendering)
+   - Typora
+   - Obsidian
+
+2. Convert to image using Mermaid CLI:
+   ```bash
+   npm install -g @mermaid-js/mermaid-cli
+   mmdc -i report.md -o report.html
+   ```
+
+### Security Score Calculation Issues
+
+**Error**: `Failed to calculate security score for resource`
+
+**Possible Causes**:
+- Resource configuration not accessible
+- Missing network security information
+- Resource type not supported
+
+**Solutions**:
+1. Check resource configuration:
+   ```bash
+   az resource show --ids <resource-id> --query properties
+   ```
+
+2. Verify network access:
+   ```bash
+   az network private-endpoint list --resource-group <rg>
+   ```
+
+3. Run analysis with debug mode:
+   ```bash
+   python main.py --action analyze-connectivity --verbose 2>&1 | grep -i security
+   ```
+
+## Performance Optimization
+
+### Slow Analysis
+
+For large environments, optimize performance:
+
+1. **Run during off-peak hours**
+   - Reduces API throttling
+   - Faster response times
+
+2. **Cache Azure CLI results**:
+   ```bash
+   export AZURE_CLI_CACHE_TTL=300
+   ```
+
+3. **Use targeted analysis** (future feature):
+   ```bash
+   python main.py --action analyze-connectivity --resource-types storage,keyvault
+   ```
+
+### Memory Issues
+
+For workspaces with many resources:
+
+1. **Increase Python memory**:
+   ```bash
+   export PYTHONMAXMEM=4G
+   ```
+
+2. **Monitor memory usage**:
+   ```bash
+   # Run with memory profiling
+   python -m memory_profiler main.py --action analyze-connectivity
    ```
 
 ## Getting Additional Help
