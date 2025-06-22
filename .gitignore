@@ -104,6 +104,7 @@ tmp/
 # Output directories
 output/
 logs/
+connectivity-reports/
 
 # Package discovery temporary directories
 azureml_package_discovery_*/
@@ -112,3 +113,6 @@ azureml_package_discovery_*/
 input/
 docker-input/
 docker-output/ 
+
+# If you use Cursor keep your rules.
+.cursor/

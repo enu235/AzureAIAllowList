@@ -21,7 +21,7 @@ When using **Azure AI Foundry Hubs** or **Azure Machine Learning workspaces** wi
 
 **This tool is provided "AS IS" without warranty of any kind. You use this tool and implement its recommendations at your own risk. Always review and test configurations in a non-production environment first.**
 
-## Features
+## 🚀 Features
 
 ### Core Package Management
 - ✅ Supports multiple package managers (pip, conda, uv, poetry)
@@ -40,6 +40,14 @@ When using **Azure AI Foundry Hubs** or **Azure Machine Learning workspaces** wi
 - 🌊 **Prompt Flow Support**: AI workflow orchestration with `--include-prompt-flow`
 - ⚙️ **Custom FQDNs**: Flexible integration with `--custom-fqdns`
 - 📊 **Mermaid Diagrams**: Visual network configuration guides
+
+### 🆕 Connectivity Analysis (NEW!)
+- 🔍 **Complete Network Mapping**: Discover and analyze all network configurations
+- 🏗️ **Resource Discovery**: Automatically find all connected Azure resources
+- 🛡️ **Security Assessment**: Calculate security scores and identify vulnerabilities
+- 📄 **Visual Reports**: Generate Markdown reports with Mermaid diagrams
+- 🎯 **Actionable Recommendations**: Get specific guidance to improve security posture
+- 📊 **Multi-format Export**: Comprehensive reports in Markdown and JSON formats
 
 ## Quick Start
 
@@ -96,7 +104,7 @@ az account set --subscription "your-subscription-id"
 
 ## Usage
 
-### Azure AI Foundry Hub (Recommended for New Projects)
+### Azure AI Foundry Hub
 
 ```bash
 # Basic AI Foundry hub configuration with enhanced AI features
@@ -109,7 +117,7 @@ python main.py \
   --include-huggingface
 ```
 
-### Azure Machine Learning Workspace (Fully Supported)
+### Azure Machine Learning Workspace
 
 ```bash
 # Azure ML workspace - complete backward compatibility maintained
@@ -146,6 +154,99 @@ python main.py \
 - **pyproject.toml** (poetry, uv)
 - **Pipfile** (pipenv)
 
+## 🔍 Connectivity Analysis
+
+Analyze the complete network connectivity and security configuration of your Azure AI Foundry Hub or ML Workspace:
+
+```bash
+# Analyze Azure AI Foundry Hub
+python main.py \
+  --hub-type azure-ai-foundry \
+  --workspace-name my-ai-hub \
+  --resource-group my-rg \
+  --action analyze-connectivity
+
+# Analyze Azure ML Workspace
+python main.py \
+  --hub-type azure-ml \
+  --workspace-name my-ml-workspace \
+  --resource-group my-rg \
+  --action analyze-connectivity
+```
+
+### What Gets Analyzed?
+
+1. **Network Configuration**
+   - Managed VNet vs Customer VNet detection
+   - Network isolation mode
+   - Public network access settings
+   - Private endpoints
+   - Outbound rules
+
+2. **Connected Resources**
+   - Storage accounts
+   - Key vaults
+   - Container registries
+   - Compute resources
+   - AI services connections
+
+3. **Security Assessment**
+   - Resource-level security scores
+   - Public access detection
+   - Private endpoint coverage
+   - Network ACLs and firewall rules
+
+### Connectivity Analysis Output
+
+The analysis generates:
+- **CLI Summary**: Quick overview in the terminal
+- **Markdown Report**: Detailed report with diagrams (`connectivity-reports/` directory)
+- **JSON Data**: Complete analysis data for programmatic use
+
+Example report structure:
+```
+connectivity-reports/
+├── my-workspace_connectivity_20240115_143022.md
+└── my-workspace_connectivity_20240115_143022.json
+```
+
+### Sample Analysis Summary
+
+```
+================================================================================
+📊 CONNECTIVITY ANALYSIS SUMMARY
+================================================================================
+
+📍 Workspace: my-ai-foundry-hub
+   Type: Azure AI Foundry
+   Location: East US
+
+🌐 Network Configuration:
+   Type: managed
+   Public Access: ✅ Disabled
+   Private Endpoints: 3
+   Outbound Rules: 12
+
+🔗 Connected Resources:
+   Total: 8
+   Average Security Score: 🟢 85/100 (High)
+   Public Accessible: 0/8 (0.0%)
+   Private Endpoint Protected: 6/8 (75.0%)
+
+⚡ Key Recommendations:
+   • Enable private endpoints for remaining 2 resources
+   • Review outbound rules for unused endpoints
+   • Enable diagnostic logging for enhanced monitoring
+
+✅ Analysis Complete:
+   Duration: 45.2 seconds
+   Steps Completed: 6/6
+
+📄 Full report saved to: connectivity-reports/my-ai-foundry-hub_connectivity_20241203_143025.md
+   JSON data saved to: connectivity-reports/my-ai-foundry-hub_connectivity_20241203_143025.json
+================================================================================
+```
+
 ### Example Output
 
 ```bash
@@ -181,9 +282,38 @@ az ml workspace outbound-rule create \
 
 ## How It Works
 
-The tool follows a systematic approach to analyze your environment and generate the appropriate network rules:
+The tool provides two main capabilities: **Package Allowlist Generation** and **Connectivity Analysis**. Both work systematically to analyze your environment:
 
-### Complete Workflow
+### Action Selection Workflow
+
+```mermaid
+graph TD
+    Start[Tool Start] --> Action{Action Selection}
+    
+    Action -->|--action package-allowlist<br/>(default)| PKG[Package Allowlist Generation]
+    Action -->|--action analyze-connectivity| CONN[Connectivity Analysis]
+    
+    PKG --> PKG1[Parse Package Files]
+    PKG1 --> PKG2[Discover Dependencies]
+    PKG2 --> PKG3[Generate FQDN Rules]
+    PKG3 --> PKG4[Output CLI Commands]
+    
+    CONN --> CONN1[Validate Prerequisites]
+    CONN1 --> CONN2[Connect to Workspace]
+    CONN2 --> CONN3[Analyze Network & Resources]
+    CONN3 --> CONN4[Security Assessment]
+    CONN4 --> CONN5[Generate Reports]
+    
+    PKG4 --> End[Complete]
+    CONN5 --> End
+    
+    style Action fill:#fff3e0
+    style PKG fill:#e1f5fe
+    style CONN fill:#f3e5f5
+    style End fill:#e8f5e8
+```
+
+### Package Allowlist Workflow
 
 ```mermaid
 graph TD
@@ -288,13 +418,22 @@ graph TD
     style O fill:#e8f5e8
 ```
 
-## Documentation
+## 📖 Documentation
 
-- 🔮 [Azure AI Foundry Network Configuration Guide](docs/ai-foundry-networking.md) **← Start Here**
+### Package Allowlist Configuration
+- 🔮 [Azure AI Foundry Network Configuration Guide](docs/ai-foundry-networking.md)
 - 🤖 [Azure ML Network Configuration Guide](docs/azure-ml-networking.md)
 - 🔒 [Private Repository Handling](docs/private-repositories.md)
 - 📋 [Package Discovery Methods](docs/package-discovery.md)
+
+### 🆕 Connectivity Analysis
+- 🔍 [Connectivity Analysis Guide](docs/connectivity-analysis.md) **← New Feature**
+- 🏗️ [Architecture Documentation](docs/connectivity-architecture.md)
+- 📚 [Migration Guide](docs/migration-guide.md)
+
+### General
 - 🔧 [Troubleshooting Guide](docs/troubleshooting.md)
+- 📝 [Examples](examples/)
 
 ## Platform Considerations
 
