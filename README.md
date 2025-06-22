@@ -290,7 +290,7 @@ The tool provides two main capabilities: **Package Allowlist Generation** and **
 graph TD
     Start[Tool Start] --> Action{Action Selection}
     
-    Action -->|--action package-allowlist<br/>(default)| PKG[Package Allowlist Generation]
+    Action -->|--action package-allowlist | PKG[Package Allowlist Generation]
     Action -->|--action analyze-connectivity| CONN[Connectivity Analysis]
     
     PKG --> PKG1[Parse Package Files]
