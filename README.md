@@ -402,9 +402,9 @@ graph TD
     F --> I[Prompt Flow Services]
     F --> J[Custom Domains]
     
-    G --> K[*.vscode.dev<br/>code.visualstudio.com]
-    H --> L[*.huggingface.co<br/>cdn-lfs.huggingface.co]
-    I --> M[github.com<br/>api.github.com]
+    G --> K[VS Code Domains]
+    H --> L[HuggingFace Domains]
+    I --> M[GitHub Domains]
     J --> N[Custom Enterprise Services]
     
     E --> O[Apply Rules]
