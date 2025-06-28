@@ -104,7 +104,8 @@ tmp/
 # Output directories
 output/
 logs/
-connectivity-reports/
+connectivity-reports/*
+!connectivity-reports/.gitkeep
 
 # Package discovery temporary directories
 azureml_package_discovery_*/

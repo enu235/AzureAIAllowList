@@ -91,7 +91,7 @@ class ResourceDiscovery(BaseAnalyzer):
                 cmd.extend(['--subscription', self.subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 return json.loads(result.stdout)
             else:
                 raise RuntimeError(f"Failed to get workspace info: {result.stderr}")
@@ -373,7 +373,7 @@ class ResourceDiscovery(BaseAnalyzer):
                 cmd.extend(['--subscription', self.subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 storage_info = json.loads(result.stdout)
                 
                 # Check public access
@@ -415,7 +415,7 @@ class ResourceDiscovery(BaseAnalyzer):
                 cmd.extend(['--subscription', self.subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 kv_info = json.loads(result.stdout)
                 
                 # Check public access
@@ -440,7 +440,7 @@ class ResourceDiscovery(BaseAnalyzer):
                     cmd_network.extend(['--subscription', self.subscription_id])
                     
                 result_network = subprocess.run(cmd_network, capture_output=True, text=True, timeout=30)
-                if result_network.returncode == 0:
+                if result_network.returncode == 0 and result_network.stdout.strip():
                     resource.network_acls = json.loads(result_network.stdout)
                     
                 # Determine access method
@@ -466,7 +466,7 @@ class ResourceDiscovery(BaseAnalyzer):
                 cmd.extend(['--subscription', self.subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 acr_info = json.loads(result.stdout)
                 
                 # Check public access
@@ -505,7 +505,7 @@ class ResourceDiscovery(BaseAnalyzer):
                 cmd.extend(['--subscription', self.subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 cs_info = json.loads(result.stdout)
                 
                 # Check public access

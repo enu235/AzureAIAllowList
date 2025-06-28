@@ -11,3 +11,5 @@ colorama
 tabulate
 validators
 urllib3
+rich
+questionary

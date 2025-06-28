@@ -14,74 +14,193 @@ License: MIT
 import click
 import sys
 import os
+import traceback
 from pathlib import Path
 from typing import List, Optional
 import json
 
 from src.workspace_analyzer import WorkspaceAnalyzerFactory
 from src.package_discoverer import PackageDiscovererFactory
-from src.output_formatter import OutputFormatterFactory
+from src.output_formatter import OutputFormatterFactory, OutputFormatter
 from src.utils.logger import setup_logger
 from src.utils.validators import validate_azure_cli
+from src.utils.cli_params import all_options, CliConfig
 from src.config.messages import MessageTemplates
 from src.config.hub_features import HubFeatureManager
 from src.connectivity.connectivity_analyzer import ConnectivityAnalyzer
+from src.connectivity.comparison_analyzer import ComparisonAnalyzer
+from src.interactive.interactive_flow import InteractiveFlow
 
 # Setup logging
 logger = setup_logger(__name__)
 
+def run_interactive_mode(verbose: bool = False) -> None:
+    """Run the tool in interactive mode"""
+    try:
+        # Initialize interactive flow
+        interactive_flow = InteractiveFlow()
+        
+        # Run interactive configuration
+        config = interactive_flow.run()
+        if not config:
+            return  # User cancelled or error occurred
+        
+        # Execute analysis based on configuration
+        subscription_id = config['subscription']['id']
+        analysis_type = config['analysis_type']
+        workspaces = config['workspaces']
+        package_config = config['package_analysis']
+        
+        if analysis_type == 'compare':
+            # Run comparison analysis
+            run_comparison_analysis(workspaces, subscription_id, package_config)
+        else:
+            # Run standard analysis
+            run_standard_analysis(workspaces, subscription_id, package_config, config)
+            
+    except Exception as e:
+        logger.error(f"Interactive mode error: {str(e)}")
+        click.echo(f"❌ [bold red]Interactive mode failed: {str(e)}[/bold red]", err=True)
+        sys.exit(1)
+
+def run_comparison_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict]) -> None:
+    """Run comparison analysis between two workspaces"""
+    if len(workspaces) != 2:
+        click.echo("❌ Comparison mode requires exactly 2 workspaces", err=True)
+        return
+    
+    # Convert WorkspaceInfo objects to dicts for the analyzer
+    ws1_info = {
+        'name': workspaces[0].name,
+        'resource_group': workspaces[0].resource_group,
+        'hub_type': workspaces[0].hub_type
+    }
+    ws2_info = {
+        'name': workspaces[1].name,
+        'resource_group': workspaces[1].resource_group,
+        'hub_type': workspaces[1].hub_type
+    }
+    
+    # Run comparison
+    comparison_analyzer = ComparisonAnalyzer()
+    comparison_result = comparison_analyzer.compare_workspaces(ws1_info, ws2_info, subscription_id)
+    
+    # Generate package comparison if requested
+    if package_config and package_config.get('files'):
+        click.echo("\n📦 Running package analysis for both workspaces...")
+        
+        # Run package analysis for both workspaces
+        for i, workspace in enumerate(workspaces, 1):
+            click.echo(f"\n🔍 Package analysis for workspace {i}: {workspace.name}")
+            run_package_analysis_for_workspace(workspace, subscription_id, package_config)
+
+def run_standard_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict], config: dict) -> None:
+    """Run standard analysis for one or more workspaces"""
+    results = []
+    
+    for workspace in workspaces:
+        click.echo(f"\n🔍 Analyzing: {workspace.name} ({workspace.hub_type})")
+        
+        # Run connectivity analysis
+        analyzer = ConnectivityAnalyzer(
+            workspace_name=workspace.name,
+            resource_group=workspace.resource_group,
+            subscription_id=subscription_id,
+            hub_type=workspace.hub_type,
+            verbose=True
+        )
+        
+        result = analyzer.analyze()
+        if result.success:
+            results.append({
+                'workspace': workspace,
+                'connectivity': result.data
+            })
+            click.echo(f"✅ Connectivity analysis completed for {workspace.name}")
+        else:
+            click.echo(f"❌ Connectivity analysis failed for {workspace.name}: {result.message}")
+        
+        # Run package analysis if requested
+        if package_config and package_config.get('files'):
+            click.echo(f"\n📦 Running package analysis for {workspace.name}...")
+            run_package_analysis_for_workspace(workspace, subscription_id, package_config)
+    
+    # Generate combined summary if multiple workspaces
+    if len(results) > 1:
+        click.echo(f"\n📊 Combined Analysis Summary ({len(results)} workspaces)")
+        for result in results:
+            ws = result['workspace']
+            click.echo(f"   • {ws.name} ({ws.hub_type}) - {ws.resource_group}")
+
+def run_package_analysis_for_workspace(workspace, subscription_id: str, package_config: dict) -> None:
+    """Run package analysis for a single workspace"""
+    try:
+        # Collect package files
+        input_files = package_config.get('files', [])
+        if not input_files:
+            click.echo("⚠️  No package files configured")
+            return
+        
+        # Discover package URLs
+        all_domains = set()
+        private_repos = []
+        
+        discoverer_factory = PackageDiscovererFactory()
+        
+        for file_type, file_path in input_files:
+            discoverer = discoverer_factory.create_discoverer(file_type)
+            
+            result = discoverer.discover_urls(
+                file_path, 
+                include_transitive=package_config.get('include_transitive', True),
+                platform=package_config.get('platform', 'auto'),
+                dry_run=False
+            )
+            
+            domains = result.domains
+            private = result.private_repositories
+            
+            all_domains.update(domains)
+            private_repos.extend(private)
+        
+        # Apply AI Foundry features if applicable
+        if workspace.hub_type == 'ai-foundry':
+            ai_features = package_config.get('ai_features', {})
+            feature_manager = HubFeatureManager()
+            ai_domains = feature_manager.get_feature_domains(
+                include_vscode=ai_features.get('include_vscode', False),
+                include_huggingface=ai_features.get('include_huggingface', False),
+                include_prompt_flow=ai_features.get('include_prompt_flow', False),
+                custom_fqdns=ai_features.get('custom_fqdns', '')
+            )
+            all_domains.update(ai_domains)
+        
+        # Generate output
+        formatter_factory = OutputFormatterFactory()
+        formatter = formatter_factory.create_formatter(
+            'cli', 
+            workspace.name, 
+            workspace.resource_group, 
+            subscription_id,
+            workspace.hub_type
+        )
+        
+        output_content = formatter.format_domains(list(all_domains))
+        
+        # Display results
+        click.echo(f"\n📋 Package Analysis Results for {workspace.name}:")
+        click.echo("="*80)
+        click.echo(output_content)
+        click.echo("="*80)
+        click.echo(f"📊 Summary: {len(all_domains)} unique domains discovered")
+        
+    except Exception as e:
+        click.echo(f"❌ Package analysis failed for {workspace.name}: {str(e)}")
+        logger.error(f"Package analysis error for {workspace.name}: {str(e)}")
+
 @click.command()
-@click.option('--action', 
-              type=click.Choice(['package-allowlist', 'analyze-connectivity'], case_sensitive=False),
-              default='package-allowlist',
-              help='Action to perform: package-allowlist (default) or analyze-connectivity')
-@click.option('--workspace-name', '-w', required=True, 
-              help='Azure ML workspace or AI Foundry hub name')
-@click.option('--resource-group', '-g', required=True,
-              help='Azure resource group name')
-@click.option('--subscription-id', '-s', 
-              help='Azure subscription ID (uses current if not specified)')
-@click.option('--hub-type', 
-              type=click.Choice(['ai-foundry', 'azure-ml'], case_sensitive=False),
-              default='ai-foundry', 
-              help='Hub type: AI Foundry hub or Azure ML workspace (default: ai-foundry)')
-@click.option('--requirements-file', '-r', type=click.Path(exists=True),
-              help='Path to requirements.txt file')
-@click.option('--conda-env', '-c', type=click.Path(exists=True),
-              help='Path to conda environment.yml file')
-@click.option('--pyproject-toml', '-p', type=click.Path(exists=True),
-              help='Path to pyproject.toml file')
-@click.option('--pipfile', type=click.Path(exists=True),
-              help='Path to Pipfile')
-@click.option('--output-format', '-o', 
-              type=click.Choice(['cli', 'json', 'yaml'], case_sensitive=False),
-              default='cli', help='Output format (default: cli)')
-@click.option('--include-transitive', is_flag=True, default=True,
-              help='Include transitive dependencies (default: True)')
-@click.option('--platform', type=click.Choice(['linux', 'windows', 'auto']),
-              default='auto', help='Target platform (default: auto-detect)')
-@click.option('--output-file', type=click.Path(),
-              help='Output file path (default: stdout)')
-@click.option('--verbose', '-v', is_flag=True,
-              help='Enable verbose logging')
-@click.option('--dry-run', is_flag=True,
-              help='Show what would be discovered without making API calls')
-# Azure AI Foundry Feature Flags
-@click.option('--include-vscode', is_flag=True,
-              help='Include Visual Studio Code integration FQDNs (AI Foundry)')
-@click.option('--include-huggingface', is_flag=True,
-              help='Include HuggingFace model access FQDNs (AI Foundry)')
-@click.option('--include-prompt-flow', is_flag=True,
-              help='Include Prompt Flow service FQDNs (AI Foundry)')
-@click.option('--custom-fqdns', 
-              help='Comma-separated list of additional custom FQDNs to include')
-def main(action: str, workspace_name: str, resource_group: str, subscription_id: Optional[str],
-         hub_type: str, requirements_file: Optional[str], conda_env: Optional[str],
-         pyproject_toml: Optional[str], pipfile: Optional[str],
-         output_format: str, include_transitive: bool, platform: str,
-         output_file: Optional[str], verbose: bool, dry_run: bool,
-         include_vscode: bool, include_huggingface: bool, include_prompt_flow: bool,
-         custom_fqdns: Optional[str]):
+@all_options
+def main(**kwargs):
     """
     Azure AI Foundry & Machine Learning Package Allowlist Tool
     
@@ -95,35 +214,50 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
     configurations in non-production environments before applying to production systems.
     """
     
-    if verbose:
+    # Create configuration object from CLI parameters
+    config = CliConfig(**kwargs)
+    
+    if config.verbose:
         logger.setLevel('DEBUG')
+    
+    # Determine if we should run in interactive mode
+    should_run_interactive = config.should_run_interactive()
+    
+    # Run interactive mode if requested or required
+    if should_run_interactive:
+        return run_interactive_mode(config.verbose)
+    
+    # Validate required parameters for non-interactive mode
+    if not config.workspace_name or not config.resource_group:
+        click.echo("❌ Workspace name and resource group are required for non-interactive mode.", err=True)
+        click.echo("💡 Run without parameters or use --interactive for guided setup.", err=True)
+        sys.exit(1)
     
     try:
         # Route based on action
-        if action == 'analyze-connectivity':
+        if config.action == 'analyze-connectivity':
             # Validate minimum required parameters for connectivity analysis
-            if not workspace_name or not resource_group:
+            if not config.workspace_name or not config.resource_group:
                 click.echo("❌ Workspace name and resource group are required for connectivity analysis.", err=True)
                 sys.exit(1)
             
             # Create and run connectivity analyzer
-            click.echo(f"🔍 Starting connectivity analysis for {hub_type} workspace: {workspace_name}")
+            click.echo(f"🔍 Starting connectivity analysis for {config.hub_type} workspace: {config.workspace_name}")
             click.echo()
             
             analyzer = ConnectivityAnalyzer(
-                workspace_name=workspace_name,
-                resource_group=resource_group,
-                subscription_id=subscription_id,
-                hub_type=hub_type.lower(),
-                verbose=verbose
+                workspace_name=config.workspace_name,
+                resource_group=config.resource_group,
+                subscription_id=config.subscription_id,
+                hub_type=config.hub_type.lower(),
+                verbose=config.verbose
             )
             
             result = analyzer.analyze()
             
             if result.success:
                 # Display comprehensive summary using Phase 4 reporting
-                from src.output_formatter import OutputFormatter
-                formatter = OutputFormatter(verbose=verbose)
+                formatter = OutputFormatter(verbose=config.verbose)
                 summary = formatter.format_connectivity_summary(result.data)
                 click.echo(summary)
                 
@@ -143,20 +277,12 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
         
         # Execute existing package allowlist functionality
         # Validate Azure CLI setup
-        if not dry_run and not validate_azure_cli():
+        if not config.dry_run and not validate_azure_cli():
             click.echo("❌ Azure CLI validation failed. Please run 'az login' and install the ML extension.", err=True)
             sys.exit(1)
         
-        # Collect input files
-        input_files = []
-        if requirements_file:
-            input_files.append(('pip', requirements_file))
-        if conda_env:
-            input_files.append(('conda', conda_env))
-        if pyproject_toml:
-            input_files.append(('pyproject', pyproject_toml))
-        if pipfile:
-            input_files.append(('pipfile', pipfile))
+        # Collect input files using the new utility method
+        input_files = config.get_input_files()
         
         if not input_files:
             click.echo("❌ No input files specified. Please provide at least one package file.", err=True)
@@ -167,7 +293,7 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
         click.echo()
         
         # Display hub type information
-        hub_type_lower = hub_type.lower()
+        hub_type_lower = config.hub_type.lower()
         if hub_type_lower == 'ai-foundry':
             click.echo("🔮 Targeting Azure AI Foundry Hub")
             click.echo("   Enhanced with AI-specific features and integrations")
@@ -178,11 +304,11 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
         
         # Analyze workspace (if not dry-run)
         workspace_analyzer = None
-        if not dry_run:
+        if not config.dry_run:
             click.echo("🔍 Analyzing workspace/hub configuration...")
             analyzer_factory = WorkspaceAnalyzerFactory()
             workspace_analyzer = analyzer_factory.create_analyzer(
-                workspace_name, resource_group, subscription_id, hub_type_lower
+                config.workspace_name, config.resource_group, config.subscription_id, hub_type_lower
             )
             workspace_config = workspace_analyzer.analyze()
             
@@ -206,9 +332,9 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
             try:
                 result = discoverer.discover_urls(
                     file_path, 
-                    include_transitive=include_transitive,
-                    platform=platform,
-                    dry_run=dry_run
+                    include_transitive=config.include_transitive,
+                    platform=config.platform,
+                    dry_run=config.dry_run
                 )
                 
                 all_domains.update(result.domains)
@@ -225,24 +351,24 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
         feature_manager = HubFeatureManager(hub_type_lower)
         
         # Process feature flags
-        if include_vscode:
+        if config.include_vscode:
             vscode_domains = feature_manager.get_vscode_domains()
             all_domains.update(vscode_domains)
             click.echo(f"  🔧 Added {len(vscode_domains)} Visual Studio Code domains")
         
-        if include_huggingface:
+        if config.include_huggingface:
             hf_domains = feature_manager.get_huggingface_domains()
             all_domains.update(hf_domains)
             click.echo(f"  🤗 Added {len(hf_domains)} HuggingFace domains")
         
-        if include_prompt_flow:
+        if config.include_prompt_flow:
             pf_domains = feature_manager.get_prompt_flow_domains()
             all_domains.update(pf_domains)
             click.echo(f"  🌊 Added {len(pf_domains)} Prompt Flow domains")
         
         # Add custom FQDNs if provided
-        if custom_fqdns:
-            custom_domains = [domain.strip() for domain in custom_fqdns.split(',')]
+        if config.custom_fqdns:
+            custom_domains = [domain.strip() for domain in config.custom_fqdns.split(',')]
             all_domains.update(custom_domains)
             click.echo(f"  ⚙️  Added {len(custom_domains)} custom domains")
         
@@ -263,29 +389,29 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
             click.echo(MessageTemplates.get_private_repo_guidance())
         
         # Generate output
-        click.echo(f"\n📝 Generating {output_format.upper()} output...")
+        click.echo(f"\n📝 Generating {config.output_format.upper()} output...")
         
         formatter_factory = OutputFormatterFactory()
         formatter = formatter_factory.create_formatter(
-            output_format, 
-            workspace_name, 
-            resource_group, 
-            subscription_id,
+            config.output_format, 
+            config.workspace_name, 
+            config.resource_group, 
+            config.subscription_id,
             hub_type_lower
         )
         
         output_content = formatter.format_domains(list(all_domains))
         
         # Output results
-        if output_file:
+        if config.output_file:
             # Create output directory if it doesn't exist
-            output_dir = os.path.dirname(output_file)
+            output_dir = os.path.dirname(config.output_file)
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
             
-            with open(output_file, 'w') as f:
+            with open(config.output_file, 'w') as f:
                 f.write(output_content)
-            click.echo(f"✅ Output written to: {output_file}")
+            click.echo(f"✅ Output written to: {config.output_file}")
         else:
             click.echo("\n" + "="*80)
             click.echo("🎯 GENERATED CONFIGURATION:")
@@ -298,19 +424,10 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
         click.echo(f"   • {len(all_domains)} unique domains discovered")
         click.echo(f"   • {len(private_repos)} private repositories detected")
         click.echo(f"   • {len(input_files)} input files processed")
-        click.echo(f"   • Hub type: {hub_type}")
+        click.echo(f"   • Hub type: {config.hub_type}")
         
-        # Display feature summary
-        enabled_features = []
-        if include_vscode:
-            enabled_features.append("Visual Studio Code")
-        if include_huggingface:
-            enabled_features.append("HuggingFace")
-        if include_prompt_flow:
-            enabled_features.append("Prompt Flow")
-        if custom_fqdns:
-            enabled_features.append("Custom FQDNs")
-        
+        # Display feature summary using the new utility method
+        enabled_features = config.get_enabled_features()
         if enabled_features:
             click.echo(f"   • Features enabled: {', '.join(enabled_features)}")
         
@@ -323,8 +440,7 @@ def main(action: str, workspace_name: str, resource_group: str, subscription_id:
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         click.echo(f"❌ Unexpected error: {str(e)}", err=True)
-        if verbose:
-            import traceback
+        if config.verbose:
             traceback.print_exc()
         sys.exit(1)
 

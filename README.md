@@ -1,459 +1,357 @@
-# Azure AI Foundry & Machine Learning Package Allowlist Tool
+# Azure AI Foundry & Machine Learning Package Tool
 
-**Version 0.5.0 (Prerelease)**
+> **⚠️ DISCLAIMER**: This tool is provided "AS IS" without warranty of any kind, express or implied. You use this tool and implement its recommendations at your own risk. Always review and test configurations in non-production environments before applying to production systems.
 
-A comprehensive tool to help **Azure AI Foundry** and Azure Machine Learning customers identify and configure allowed inbound/outbound URLs for Python packages in secured environments.
+[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](https://github.com/yourusername/AzureAIAllowList)
+[![Python](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## Overview
+## 🚀 What This Tool Does
 
-When using **Azure AI Foundry Hubs** or **Azure Machine Learning workspaces** with network restrictions (`allow_only_approved_outbound` or customer-managed virtual networks), customers need to explicitly allow package download URLs. This tool automatically discovers package download domains and generates the necessary Azure CLI commands to configure your workspace or hub.
+Analyze Azure AI Foundry Hubs and Azure Machine Learning workspaces to generate comprehensive network allowlists and connectivity reports for secured environments. Get the FQDNs you need to configure firewalls, NSGs, and private endpoints.
 
-### ✨ **What's New in v0.5.0: Enhanced Azure AI Foundry Support**
+### ✨ Key Features
 
-- 🔮 **Azure AI Foundry Hub**: Optimized configuration for AI Foundry hubs
-- 🔧 **VS Code Integration**: Enable browser-based development environments with `--include-vscode`
-- 🤗 **HuggingFace Model Hub**: Direct access to model repositories with `--include-huggingface`
-- 🌊 **Prompt Flow Services**: Advanced AI workflow orchestration with `--include-prompt-flow`
-- ⚙️ **Custom Domain Support**: Flexible integration with `--custom-fqdns` for enterprise needs
-- 🏗️ **Improved Architecture**: Enhanced discovery and mapping for both AI Foundry and Azure ML environments
+- 🎯 **Interactive Mode**: Zero-configuration startup with guided analysis
+- 🔍 **Auto-Discovery**: Automatically find workspaces in your subscriptions  
+- 🔮 **Azure AI Foundry Support**: Full support for AI Foundry hubs with enhanced features
+- 🤖 **Azure ML Support**: Complete Azure Machine Learning workspace analysis
+- 📦 **Package Analysis**: Discover FQDNs from requirements.txt, environment.yml, and more
+- 🔄 **Workspace Comparison**: Side-by-side analysis of two workspaces
+- 📊 **Rich Reports**: Detailed connectivity analysis with security assessments
 
-## 🚨 DISCLAIMER
-
-**This tool is provided "AS IS" without warranty of any kind. You use this tool and implement its recommendations at your own risk. Always review and test configurations in a non-production environment first.**
-
-## 🚀 Features
-
-### Core Package Management
-- ✅ Supports multiple package managers (pip, conda, uv, poetry)
-- ✅ Works with both managed virtual networks and customer-managed VNets
-- ✅ Handles both isolation modes (`allow_internet_outbound` and `allow_only_approved_outbound`)
-- ✅ Discovers transitive dependencies
-- ✅ Generates Azure CLI commands for easy implementation
-- ✅ Detects private/internal repositories with guidance
-- ✅ Provides platform-specific considerations (Windows/Linux)
-- ✅ Docker support for isolated execution
-
-### Azure AI Foundry Enhancements
-- 🔮 **Hub Type Selection**: Choose between `azure-ml` and `ai-foundry` configurations
-- 🔧 **VS Code Integration**: Enable browser-based VS Code with `--include-vscode`
-- 🤗 **HuggingFace Access**: Direct model hub integration with `--include-huggingface`
-- 🌊 **Prompt Flow Support**: AI workflow orchestration with `--include-prompt-flow`
-- ⚙️ **Custom FQDNs**: Flexible integration with `--custom-fqdns`
-- 📊 **Mermaid Diagrams**: Visual network configuration guides
-
-### 🆕 Connectivity Analysis (NEW!)
-- 🔍 **Complete Network Mapping**: Discover and analyze all network configurations
-- 🏗️ **Resource Discovery**: Automatically find all connected Azure resources
-- 🛡️ **Security Assessment**: Calculate security scores and identify vulnerabilities
-- 📄 **Visual Reports**: Generate Markdown reports with Mermaid diagrams
-- 🎯 **Actionable Recommendations**: Get specific guidance to improve security posture
-- 📊 **Multi-format Export**: Comprehensive reports in Markdown and JSON formats
-
-## Quick Start
+## 🎯 Quick Start
 
 ### Prerequisites
 
-1. **Python 3.12+**
-2. **Azure CLI** with ML extension
-3. **Docker** (optional, for containerized execution)
+- **Python 3.8+** 
+- **Azure CLI** with ML extension
+- **Azure subscription** with access to AI Foundry or ML workspaces
 
-### Installation Options
+### Installation
 
-#### Option 1: Using Conda/Miniconda
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/enu235/AzureAIAllowList.git
+   cd AzureAIAllowList
+   ```
+
+2. **Create and activate virtual environment**:
+   ```bash
+   # Using venv
+   python -m venv azureml-tool
+   source azureml-tool/bin/activate  # Linux/Mac
+   # azureml-tool\Scripts\activate  # Windows
+
+   # OR using conda
+   conda create -n azureml-tool python=3.9
+   conda activate azureml-tool
+
+   # OR using uv (if you have it)
+   uv venv azureml-tool
+   source azureml-tool/bin/activate  # Linux/Mac
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install Azure CLI** (if not already installed):
+   ```bash
+   # macOS
+   brew install azure-cli
+   
+   # Ubuntu/Debian
+   curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+   
+   # Windows (PowerShell)
+   winget install Microsoft.AzureCLI
+   ```
+
+5. **Install Azure ML extension**:
+   ```bash
+   az extension add --name ml
+   ```
+
+6. **Login to Azure**:
+   ```bash
+   az login
+   ```
+
+## 🎮 Interactive Mode (Recommended)
+
+The easiest way to use the tool:
+
 ```bash
-conda create -n azureml-package-tool python=3.12
-conda activate azureml-package-tool
-pip install -r requirements.txt
+python main.py
 ```
 
-#### Option 2: Using pip with venv
-```bash
-python3.12 -m venv azureml-package-tool
-source azureml-package-tool/bin/activate  # On Windows: azureml-package-tool\Scripts\activate
-pip install -r requirements.txt
+The interactive mode will guide you through:
+
+1. **🔐 Authentication**: Auto-detects Azure CLI login status
+2. **📋 Subscription Selection**: Choose from available subscriptions
+3. **🔍 Workspace Discovery**: Auto-discover workspaces with visual indicators:
+   - 🔮 **Azure AI Foundry Hubs** (magenta)
+   - 🤖 **Azure ML Workspaces** (green)
+4. **🎯 Analysis Type**: Choose standard analysis or workspace comparison
+5. **📦 Package Analysis**: Optionally include package dependency analysis
+
+### Example Interactive Session
+
+```
+🚀 Azure AI Foundry & ML Package Allowlist Tool
+Interactive Mode
+
+🔐 Azure CLI Authentication Check
+✅ Logged in as: user@company.com
+
+📋 Available Subscriptions
+┌─────────────────────────────────────┬──────────────────────────┐
+│ Subscription Name                   │ Subscription ID          │
+├─────────────────────────────────────┼──────────────────────────┤
+│ Production Subscription             │ 12345678-1234-5678-...   │
+│ Development Subscription            │ 87654321-4321-8765-...   │
+└─────────────────────────────────────┴──────────────────────────┘
+
+🔍 Available Workspaces
+┌─────────────────────────┬─────────────────┬──────────────┬───────────┐
+│ Name                    │ Type            │ Location     │ RG        │
+├─────────────────────────┼─────────────────┼──────────────┼───────────┤
+│ 🔮 ai-foundry-prod     │ AI Foundry Hub  │ East US      │ prod-rg   │
+│ 🤖 ml-workspace-dev    │ Azure ML        │ West US 2    │ dev-rg    │
+└─────────────────────────┴─────────────────┴──────────────┴───────────┘
+
+? Select analysis type:
+  ▸ Standard Analysis (1+ workspaces)
+    Comparison Analysis (exactly 2 workspaces)
+
+? Include package analysis? (Y/n): Y
+? Package file path (optional): requirements.txt
+
+🔄 Analyzing ai-foundry-prod...
+✅ Analysis complete! Reports saved to connectivity-reports/
 ```
 
-#### Option 3: Using uv
+## ⚡ Command Line Mode
+
+For automation and scripting:
+
+### Basic Analysis
+
 ```bash
-uv venv azureml-package-tool --python 3.12
-source azureml-package-tool/bin/activate  # On Windows: azureml-package-tool\Scripts\activate
-uv pip install -r requirements.txt
+# Analyze a single workspace
+python main.py \
+  --workspace-name my-ai-foundry-hub \
+  --resource-group my-rg \
+  --subscription 12345678-1234-5678-9012-123456789012
+
+# With package analysis  
+python main.py \
+  --workspace-name my-workspace \
+  --resource-group my-rg \
+  --subscription 12345678-1234-5678-9012-123456789012 \
+  --requirements-file requirements.txt
 ```
 
-#### Option 4: Docker
+### Workspace Comparison
+
 ```bash
-docker build -t azureml-package-tool .
-docker run -it -v $(pwd):/workspace azureml-package-tool
+python main.py \
+  --workspace-name prod-workspace \
+  --resource-group prod-rg \
+  --workspace-name-2 dev-workspace \
+  --resource-group-2 dev-rg \
+  --subscription 12345678-1234-5678-9012-123456789012 \
+  --comparison-mode
 ```
 
-### Azure CLI Setup
+### Advanced Options
 
 ```bash
-# Install Azure CLI (if not already installed)
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+# Bash/Linux Azure CLI commands (default)
+python main.py \
+  --workspace-name my-workspace \
+  --resource-group my-rg \
+  --subscription 12345678-1234-5678-9012-123456789012 \
+  --requirements-file requirements.txt \
+  --environment-file environment.yml \
+  --include-vscode \
+  --include-huggingface \
+  --output-format cli \
+  --verbose
+
+# PowerShell Azure CLI commands (Windows)
+python main.py \
+  --workspace-name my-workspace \
+  --resource-group my-rg \
+  --subscription 12345678-1234-5678-9012-123456789012 \
+  --requirements-file requirements.txt \
+  --output-format powershell \
+  --verbose
+```
+
+## 📊 What You Get
+
+### Network Allowlist Report
+
+- **Required FQDNs** for package repositories (PyPI, Conda, etc.)
+- **Azure service endpoints** for ML/AI operations
+- **Enhanced features** for AI Foundry (VS Code, HuggingFace, Prompt Flow)
+- **Custom FQDNs** from your package dependencies
+
+### Connectivity Analysis Report
+
+- **Network configuration** details and security posture
+- **Resource inventory** with security assessments
+- **Mermaid diagrams** showing network relationships
+- **Security recommendations** with actionable guidance
+- **Compliance status** and risk assessment
+
+### Example Output Structure
+
+```
+connectivity-reports/
+├── my-workspace-connectivity-report.md
+├── my-workspace-allowlist.json
+├── my-workspace-security-summary.md
+└── azure-firewall-rules.json
+```
+
+## 🔧 Configuration Options
+
+### Package File Formats Supported
+
+| Format | File | Description |
+|--------|------|-------------|
+| **pip** | `requirements.txt` | Standard Python packages |
+| **conda** | `environment.yml` | Conda environment files |
+| **poetry** | `pyproject.toml` | Poetry dependency management |
+| **pipenv** | `Pipfile`/`Pipfile.lock` | Pipenv virtual environments |
+| **setup** | `setup.py`/`setup.cfg` | Package setup files |
+
+### AI Foundry Enhanced Features
+
+When analyzing Azure AI Foundry hubs, additional FQDNs are included:
+
+- **VS Code Integration**: `*.vscode-cdn.net`, `marketplace.visualstudio.com`
+- **HuggingFace Models**: `*.huggingface.co`, `cdn-lfs.huggingface.co`  
+- **Prompt Flow**: Additional GitHub and API endpoints
+- **Enhanced Package Discovery**: AI/ML specific repositories
+
+### Output Formats
+
+| Format | Usage | Description |
+|--------|-------|-------------|
+| `cli` | Default | Bash/Linux commands for Azure CLI |
+| `powershell` | Windows | PowerShell commands for Azure CLI |
+| `json` | Automation | Machine-readable structured data |
+| `yaml` | Configuration | YAML format for config files |
+
+## 🛡️ Security Considerations
+
+- **No credential storage**: All authentication handled by Azure CLI
+- **Local processing**: No data sent to external services
+- **Input validation**: Comprehensive validation of all inputs
+- **Error handling**: No sensitive information exposed in error messages
+
+## 🔄 Backward Compatibility
+
+This tool maintains **100% backward compatibility** with existing scripts:
+
+- All existing command-line parameters work unchanged
+- Same output formats and file structures  
+- No breaking changes to CLI interface
+- Existing automation and CI/CD pipelines continue to work
+
+## 🐳 Docker Support
+
+For users who prefer containerized execution without installing local dependencies:
+
+```bash
+# Interactive mode with Docker
+cd docker
+docker-compose up
+
+# Command line mode with Docker
+docker-compose run azure-ai-allowlist-cli python main.py \
+  --workspace-name my-workspace \
+  --resource-group my-rg \
+  --output-format powershell
+```
+
+**Benefits:**
+- Zero local dependencies (only Docker required)
+- Pre-configured Python, Azure CLI, and all dependencies
+- Reports output to local `connectivity-reports/` folder
+- Uses your existing Azure CLI authentication
+
+See **[Docker Documentation](docker/README.md)** for complete setup and usage guide.
+
+## 📚 Documentation
+
+- **[Interactive Mode Guide](docs/interactive-mode.md)** - Comprehensive guide to interactive features
+- **[Analysis & Discovery Guide](docs/analysis-discovery.md)** - Detailed analysis capabilities
+- **[Private Repositories](docs/private-repositories.md)** - Handling private package repositories
+- **[Docker Usage Guide](docker/README.md)** - Containerized execution guide
+- **[Contributing Guide](docs/contributing.md)** - How to contribute to this project
+
+## 🚨 Common Issues
+
+### Azure CLI Not Found
+
+```bash
+# Install Azure CLI first
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash  # Linux
+brew install azure-cli  # macOS
+winget install Microsoft.AzureCLI  # Windows
 
 # Install ML extension
-az extension add -n ml
+az extension add --name ml
+```
 
+### Authentication Issues
+
+```bash
 # Login to Azure
 az login
 
-# Set your subscription
+# Set subscription (if multiple)
 az account set --subscription "your-subscription-id"
+
+# Verify access
+az account show
 ```
 
-## Usage
+### Permission Errors
 
-### Azure AI Foundry Hub
+Required Azure RBAC roles:
+- **Azure AI Foundry**: `AzureML Data Scientist` role minimum
+- **Azure ML**: `Machine Learning Workspace Contributor` role minimum  
+- **Network Analysis**: `Reader` role on workspace and connected resources
 
-```bash
-# Basic AI Foundry hub configuration with enhanced AI features
-python main.py \
-  --hub-type ai-foundry \
-  --workspace-name "your-ai-foundry-hub" \
-  --resource-group "your-rg" \
-  --requirements-file "requirements.txt" \
-  --include-vscode \
-  --include-huggingface
-```
+## 🤝 Contributing
 
-### Azure Machine Learning Workspace
+We welcome contributions! Please see our [Contributing Guide](docs/contributing.md) for details on:
 
-```bash
-# Azure ML workspace - complete backward compatibility maintained
-python main.py \
-  --hub-type azure-ml \
-  --workspace-name "your-ml-workspace" \
-  --resource-group "your-rg" \
-  --requirements-file "requirements.txt"
-```
+- Code style and standards
+- Testing requirements  
+- Submitting pull requests
+- Reporting issues
 
-### Advanced AI Foundry Configuration
+## 📝 License
 
-```bash
-# Full-featured AI Foundry hub setup
-python main.py \
-  --hub-type ai-foundry \
-  --workspace-name "production-ai-hub" \
-  --resource-group "your-rg" \
-  --subscription-id "your-sub-id" \
-  --requirements-file "requirements.txt" \
-  --conda-env "environment.yml" \
-  --include-vscode \
-  --include-huggingface \
-  --include-prompt-flow \
-  --custom-fqdns "internal-models.company.com,api.corp.com" \
-  --output-format cli \
-  --output-file "ai-foundry-rules.sh"
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Input File Formats Supported
+## 🏷️ Version History
 
-- **requirements.txt** (pip)
-- **environment.yml** (conda)
-- **pyproject.toml** (poetry, uv)
-- **Pipfile** (pipenv)
+**v0.8.0** - Major Interactive Enhancement
+- ✨ Interactive mode with rich UI
+- 🔍 Auto-discovery of workspaces
+- 🔄 Workspace comparison analysis
+- 🎨 Enhanced user experience
+- 📚 Comprehensive documentation rewrite
 
-## 🔍 Connectivity Analysis
+---
 
-Analyze the complete network connectivity and security configuration of your Azure AI Foundry Hub or ML Workspace:
-
-```bash
-# Analyze Azure AI Foundry Hub
-python main.py \
-  --hub-type azure-ai-foundry \
-  --workspace-name my-ai-hub \
-  --resource-group my-rg \
-  --action analyze-connectivity
-
-# Analyze Azure ML Workspace
-python main.py \
-  --hub-type azure-ml \
-  --workspace-name my-ml-workspace \
-  --resource-group my-rg \
-  --action analyze-connectivity
-```
-
-### What Gets Analyzed?
-
-1. **Network Configuration**
-   - Managed VNet vs Customer VNet detection
-   - Network isolation mode
-   - Public network access settings
-   - Private endpoints
-   - Outbound rules
-
-2. **Connected Resources**
-   - Storage accounts
-   - Key vaults
-   - Container registries
-   - Compute resources
-   - AI services connections
-
-3. **Security Assessment**
-   - Resource-level security scores
-   - Public access detection
-   - Private endpoint coverage
-   - Network ACLs and firewall rules
-
-### Connectivity Analysis Output
-
-The analysis generates:
-- **CLI Summary**: Quick overview in the terminal
-- **Markdown Report**: Detailed report with diagrams (`connectivity-reports/` directory)
-- **JSON Data**: Complete analysis data for programmatic use
-
-Example report structure:
-```
-connectivity-reports/
-├── my-workspace_connectivity_20240115_143022.md
-└── my-workspace_connectivity_20240115_143022.json
-```
-
-### Sample Analysis Summary
-
-```
-================================================================================
-📊 CONNECTIVITY ANALYSIS SUMMARY
-================================================================================
-
-📍 Workspace: my-ai-foundry-hub
-   Type: Azure AI Foundry
-   Location: East US
-
-🌐 Network Configuration:
-   Type: managed
-   Public Access: ✅ Disabled
-   Private Endpoints: 3
-   Outbound Rules: 12
-
-🔗 Connected Resources:
-   Total: 8
-   Average Security Score: 🟢 85/100 (High)
-   Public Accessible: 0/8 (0.0%)
-   Private Endpoint Protected: 6/8 (75.0%)
-
-⚡ Key Recommendations:
-   • Enable private endpoints for remaining 2 resources
-   • Review outbound rules for unused endpoints
-   • Enable diagnostic logging for enhanced monitoring
-
-✅ Analysis Complete:
-   Duration: 45.2 seconds
-   Steps Completed: 6/6
-
-📄 Full report saved to: connectivity-reports/my-ai-foundry-hub_connectivity_20241203_143025.md
-   JSON data saved to: connectivity-reports/my-ai-foundry-hub_connectivity_20241203_143025.json
-================================================================================
-```
-
-### Example Output
-
-```bash
-#!/bin/bash
-# Azure AI Foundry Hub Outbound Rules Configuration
-# Hub Type: ai-foundry
-# Workspace/Hub: your-ai-foundry-hub
-
-# Package repositories
-az ml workspace outbound-rule create \
-  --workspace-name "$WORKSPACE_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --rule-name "pypi-packages" \
-  --type fqdn \
-  --destination "*.pypi.org"
-
-# VS Code integration
-az ml workspace outbound-rule create \
-  --workspace-name "$WORKSPACE_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --rule-name "vscode-web" \
-  --type fqdn \
-  --destination "*.vscode.dev"
-
-# HuggingFace model access
-az ml workspace outbound-rule create \
-  --workspace-name "$WORKSPACE_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --rule-name "huggingface-models" \
-  --type fqdn \
-  --destination "*.huggingface.co"
-```
-
-## How It Works
-
-The tool provides two main capabilities: **Package Allowlist Generation** and **Connectivity Analysis**. Both work systematically to analyze your environment:
-
-### Action Selection Workflow
-
-```mermaid
-graph TD
-    Start[Tool Start] --> Action{Action Selection}
-    
-    Action -->|--action package-allowlist | PKG[Package Allowlist Generation]
-    Action -->|--action analyze-connectivity| CONN[Connectivity Analysis]
-    
-    PKG --> PKG1[Parse Package Files]
-    PKG1 --> PKG2[Discover Dependencies]
-    PKG2 --> PKG3[Generate FQDN Rules]
-    PKG3 --> PKG4[Output CLI Commands]
-    
-    CONN --> CONN1[Validate Prerequisites]
-    CONN1 --> CONN2[Connect to Workspace]
-    CONN2 --> CONN3[Analyze Network & Resources]
-    CONN3 --> CONN4[Security Assessment]
-    CONN4 --> CONN5[Generate Reports]
-    
-    PKG4 --> End[Complete]
-    CONN5 --> End
-    
-    style Action fill:#fff3e0
-    style PKG fill:#e1f5fe
-    style CONN fill:#f3e5f5
-    style End fill:#e8f5e8
-```
-
-### Package Allowlist Workflow
-
-```mermaid
-graph TD
-    A[Start] --> B[Parse Command Line Options]
-    B --> C{Hub Type Selection}
-    
-    C -->|ai-foundry| D[AI Foundry Configuration]
-    C -->|azure-ml| E[Azure ML Configuration]
-    
-    D --> F[Load AI Foundry Features]
-    E --> F
-    
-    F --> G[Parse Package Files]
-    G --> H[Discover Dependencies]
-    H --> I{Include Transitive?}
-    
-    I -->|Yes| J[Resolve Full Dependency Tree]
-    I -->|No| K[Direct Dependencies Only]
-    
-    J --> L[Extract Package Sources]
-    K --> L
-    
-    L --> M[Map to FQDNs]
-    M --> N{Private Repos Detected?}
-    
-    N -->|Yes| O[Generate Private Endpoint Guidance]
-    N -->|No| P[Add Feature-Specific Domains]
-    
-    O --> P
-    P --> Q[Generate Azure CLI Commands]
-    Q --> R[Output Results]
-    
-    style C fill:#fff3e0
-    style D fill:#e1f5fe
-    style E fill:#e8f5e8
-    style R fill:#f3e5f5
-```
-
-### Tool Architecture
-
-The tool uses a modular architecture designed for both Azure AI Foundry and Azure ML environments:
-
-```mermaid
-graph TD
-    A[Package Tool Core] --> B[Workspace Analyzers]
-    A --> C[Package Discoverers]
-    A --> D[Output Formatters]
-    A --> E[Feature Managers]
-    
-    B --> B1[Managed VNet Analyzer]
-    B --> B2[Customer VNet Analyzer]
-    B --> B3[AI Foundry Hub Analyzer]
-    
-    C --> C1[Pip Discoverer]
-    C --> C2[Conda Discoverer]
-    C --> C3[Poetry Discoverer]
-    C --> C4[Pipenv Discoverer]
-    
-    D --> D1[CLI Command Generator]
-    D --> D2[JSON Config Generator]
-    D --> D3[YAML Config Generator]
-    
-    E --> E1[AI Foundry Features]
-    E --> E2[VS Code Integration]
-    E --> E3[HuggingFace Support]
-    E --> E4[Prompt Flow Services]
-    
-    style A fill:#e1f5fe
-    style E1 fill:#f3e5f5
-```
-
-### Azure AI Foundry Enhanced Workflow
-
-```mermaid
-graph TD
-    A[Azure AI Foundry Hub] --> B{Network Isolation Mode}
-    
-    B -->|Allow Internet Outbound| C[Basic Package Rules]
-    B -->|Allow Only Approved| D[Comprehensive FQDN Rules]
-    
-    C --> E[Standard Package Sources]
-    D --> F[Package Sources + AI Features]
-    
-    F --> G[VS Code Integration]
-    F --> H[HuggingFace Models]
-    F --> I[Prompt Flow Services]
-    F --> J[Custom Domains]
-    
-    G --> K[VS Code Domains]
-    H --> L[HuggingFace Domains]
-    I --> M[GitHub Domains]
-    J --> N[Custom Enterprise Services]
-    
-    E --> O[Apply Rules]
-    K --> O
-    L --> O
-    M --> O
-    N --> O
-    
-    style A fill:#e1f5fe
-    style D fill:#f9f,stroke:#333,stroke-width:2px
-    style O fill:#e8f5e8
-```
-
-## 📖 Documentation
-
-### Package Allowlist Configuration
-- 🔮 [Azure AI Foundry Network Configuration Guide](docs/ai-foundry-networking.md)
-- 🤖 [Azure ML Network Configuration Guide](docs/azure-ml-networking.md)
-- 🔒 [Private Repository Handling](docs/private-repositories.md)
-- 📋 [Package Discovery Methods](docs/package-discovery.md)
-
-### 🆕 Connectivity Analysis
-- 🔍 [Connectivity Analysis Guide](docs/connectivity-analysis.md) **← New Feature**
-- 🏗️ [Architecture Documentation](docs/connectivity-architecture.md)
-- 📚 [Migration Guide](docs/migration-guide.md)
-
-### General
-- 🔧 [Troubleshooting Guide](docs/troubleshooting.md)
-- 📝 [Examples](examples/)
-
-## Platform Considerations
-
-### Windows vs Linux Packages
-Some packages have platform-specific dependencies. The tool will detect and warn about potential cross-platform issues.
-
-### Private/Internal Repositories
-When private repositories are detected, the tool provides guidance on:
-- Uploading packages to Azure Storage
-- Configuring blob storage access
-- Setting up private endpoints
-
-## Contributing
-
-This tool is designed to be community-driven. Please contribute improvements, bug fixes, and additional package manager support.
-
-## Support
-
-This is a community tool. For Azure ML specific issues, refer to [Microsoft's official documentation](https://learn.microsoft.com/en-us/azure/machine-learning/).
-
-## License
-
-MIT License - see LICENSE file for details. 
+> **Remember**: This tool is provided "AS IS" without warranty. Always test configurations in non-production environments before applying to production systems. 

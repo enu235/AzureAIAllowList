@@ -133,7 +133,7 @@ class KeyVaultAnalyzer:
                 cmd.extend(['--subscription', subscription_id])
                 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout.strip():
                 kv_info = json.loads(result.stdout)
                 properties = kv_info.get('properties', {})
                 

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  azure-ai-allowlist:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: azure-ai-allowlist-tool
+    environment:
+      # Ensure Azure CLI uses host's authentication
+      - AZURE_CONFIG_DIR=/root/.azure
+    volumes:
+      # Mount Azure CLI config from host (if it exists)
+      - ~/.azure:/root/.azure:ro
+      # Mount connectivity reports directory for output
+      - ../connectivity-reports:/app/connectivity-reports
+      # Mount current directory for access to package files
+      - ../:/app/input:ro
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    # Override default command for interactive mode
+    command: python main.py
+
+  # Alternative service for running with parameters
+  azure-ai-allowlist-cli:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: azure-ai-allowlist-cli
+    volumes:
+      # Mount Azure CLI config from host (if it exists)
+      - ~/.azure:/root/.azure:ro
+      # Mount connectivity reports directory for output
+      - ../connectivity-reports:/app/connectivity-reports
+      # Mount current directory for access to package files
+      - ../:/app/input:ro
+    working_dir: /app
+    # This service is for running with specific parameters
+    # Example: docker-compose run azure-ai-allowlist-cli python main.py --workspace-name myworkspace --resource-group myrg
+    profiles:
+      - cli 
