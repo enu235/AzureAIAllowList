@@ -57,9 +57,12 @@ class InteractiveFlow:
             # Step 5: Package Analysis Configuration
             package_config = self._handle_package_configuration()
             
-            # Step 6: Build and return configuration
+            # Step 6: AI Features Configuration (independent of package analysis)
+            ai_features_config = self._handle_ai_features_configuration()
+            
+            # Step 7: Build and return configuration
             config = self._build_analysis_config(
-                subscription, workspaces, analysis_type, package_config
+                subscription, workspaces, analysis_type, package_config, ai_features_config
             )
             
             self._display_analysis_summary(config)
@@ -148,8 +151,13 @@ class InteractiveFlow:
         analysis_selector = AnalysisSelector(self.console)
         return analysis_selector.configure_package_analysis()
     
+    def _handle_ai_features_configuration(self) -> Optional[Dict]:
+        """Handle AI features configuration"""
+        analysis_selector = AnalysisSelector(self.console)
+        return analysis_selector.configure_ai_features()
+    
     def _build_analysis_config(self, subscription: Dict, workspaces: List[WorkspaceInfo], 
-                              analysis_type: str, package_config: Optional[Dict]) -> Dict[str, Any]:
+                              analysis_type: str, package_config: Optional[Dict], ai_features_config: Optional[Dict]) -> Dict[str, Any]:
         """Build the final analysis configuration"""
         config = {
             'mode': 'interactive',
@@ -157,6 +165,7 @@ class InteractiveFlow:
             'analysis_type': analysis_type,
             'workspaces': workspaces,
             'package_analysis': package_config,
+            'ai_features': ai_features_config,
             'output_settings': {
                 'format': 'cli',
                 'include_transitive': package_config.get('include_transitive', True) if package_config else True,
@@ -164,10 +173,6 @@ class InteractiveFlow:
                 'verbose': True
             }
         }
-        
-        # Add AI features if configured
-        if package_config and package_config.get('ai_features'):
-            config['ai_features'] = package_config['ai_features']
         
         return config
     
@@ -201,8 +206,12 @@ class InteractiveFlow:
             self.console.print(f"📦 [bold]Package Analysis:[/bold] Enabled")
             if package_config.get('files'):
                 self.console.print(f"   Files: {len(package_config['files'])} package file(s)")
+        else:
+            self.console.print(f"📦 [bold]Package Analysis:[/bold] [yellow]Disabled[/yellow] (connectivity only)")
             
-            ai_features = package_config.get('ai_features', {})
+        # AI Features (independent of package analysis)
+        ai_features = config['ai_features']
+        if ai_features:
             enabled_features = []
             if ai_features.get('include_vscode'):
                 enabled_features.append("VS Code")
@@ -214,9 +223,11 @@ class InteractiveFlow:
                 enabled_features.append("Custom FQDNs")
             
             if enabled_features:
-                self.console.print(f"   AI Features: {', '.join(enabled_features)}")
+                self.console.print(f"🔮 [bold]AI Features:[/bold] {', '.join(enabled_features)}")
+            else:
+                self.console.print(f"🔮 [bold]AI Features:[/bold] [yellow]Configured but none selected[/yellow]")
         else:
-            self.console.print(f"📦 [bold]Package Analysis:[/bold] [yellow]Disabled[/yellow] (connectivity only)")
+            self.console.print(f"🔮 [bold]AI Features:[/bold] [yellow]Disabled[/yellow]")
         
         self.console.print()
         self.console.print("🚀 [bold green]Starting analysis...[/bold green]")

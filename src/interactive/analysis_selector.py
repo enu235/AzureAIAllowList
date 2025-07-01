@@ -107,8 +107,7 @@ class AnalysisSelector:
             'enabled': True,
             'files': [],
             'include_transitive': True,
-            'platform': 'auto',
-            'ai_features': {}
+            'platform': 'auto'
         }
         
         # Discover package files in current directory
@@ -149,9 +148,6 @@ class AnalysisSelector:
             "Target platform:",
             choices=platform_choices
         ).ask()
-        
-        # Configure AI Foundry features if applicable
-        config['ai_features'] = self._configure_ai_features()
         
         return config
     
@@ -263,4 +259,38 @@ class AnalysisSelector:
             if custom_fqdns_input:
                 ai_features['custom_fqdns'] = custom_fqdns_input.strip()
         
-        return ai_features 
+        return ai_features
+
+    def configure_ai_features(self) -> Optional[Dict]:
+        """
+        Configure AI features independently of package analysis.
+        
+        Returns:
+            Dict with AI features configuration, or None if not requested
+        """
+        self.console.print()
+        self.console.print(Panel.fit(
+            "[bold cyan]🔮 AI Features Configuration[/bold cyan]",
+            border_style="cyan"
+        ))
+        
+        # Ask if user wants AI features
+        try:
+            enable_ai_features = questionary.confirm(
+                "Would you like to include AI Foundry features (VSCode, HuggingFace, Prompt Flow)?",
+                default=False
+            ).ask()
+            
+            if not enable_ai_features:
+                self.console.print("ℹ️  AI features [bold yellow]disabled[/bold yellow]")
+                return None
+            
+            self.console.print("✅ AI features [bold green]enabled[/bold green]")
+            
+            # Configure AI features settings
+            ai_config = self._configure_ai_features()
+            return ai_config
+            
+        except KeyboardInterrupt:
+            self.console.print("\n❌ Configuration cancelled")
+            return None 

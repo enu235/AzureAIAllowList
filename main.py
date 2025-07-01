@@ -50,20 +50,21 @@ def run_interactive_mode(verbose: bool = False) -> None:
         analysis_type = config['analysis_type']
         workspaces = config['workspaces']
         package_config = config['package_analysis']
+        ai_features_config = config['ai_features']  # Extract AI features separately
         
         if analysis_type == 'compare':
             # Run comparison analysis
-            run_comparison_analysis(workspaces, subscription_id, package_config)
+            run_comparison_analysis(workspaces, subscription_id, package_config, ai_features_config)
         else:
             # Run standard analysis
-            run_standard_analysis(workspaces, subscription_id, package_config, config)
+            run_standard_analysis(workspaces, subscription_id, package_config, ai_features_config, config)
             
     except Exception as e:
         logger.error(f"Interactive mode error: {str(e)}")
         click.echo(f"❌ [bold red]Interactive mode failed: {str(e)}[/bold red]", err=True)
         sys.exit(1)
 
-def run_comparison_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict]) -> None:
+def run_comparison_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict], ai_features_config: Optional[dict]) -> None:
     """Run comparison analysis between two workspaces"""
     if len(workspaces) != 2:
         click.echo("❌ Comparison mode requires exactly 2 workspaces", err=True)
@@ -92,9 +93,9 @@ def run_comparison_analysis(workspaces: List, subscription_id: str, package_conf
         # Run package analysis for both workspaces
         for i, workspace in enumerate(workspaces, 1):
             click.echo(f"\n🔍 Package analysis for workspace {i}: {workspace.name}")
-            run_package_analysis_for_workspace(workspace, subscription_id, package_config)
+            run_package_analysis_for_workspace(workspace, subscription_id, package_config, ai_features_config)
 
-def run_standard_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict], config: dict) -> None:
+def run_standard_analysis(workspaces: List, subscription_id: str, package_config: Optional[dict], ai_features_config: Optional[dict], config: dict) -> None:
     """Run standard analysis for one or more workspaces"""
     results = []
     
@@ -123,7 +124,7 @@ def run_standard_analysis(workspaces: List, subscription_id: str, package_config
         # Run package analysis if requested
         if package_config and package_config.get('files'):
             click.echo(f"\n📦 Running package analysis for {workspace.name}...")
-            run_package_analysis_for_workspace(workspace, subscription_id, package_config)
+            run_package_analysis_for_workspace(workspace, subscription_id, package_config, ai_features_config)
     
     # Generate combined summary if multiple workspaces
     if len(results) > 1:
@@ -132,7 +133,7 @@ def run_standard_analysis(workspaces: List, subscription_id: str, package_config
             ws = result['workspace']
             click.echo(f"   • {ws.name} ({ws.hub_type}) - {ws.resource_group}")
 
-def run_package_analysis_for_workspace(workspace, subscription_id: str, package_config: dict) -> None:
+def run_package_analysis_for_workspace(workspace, subscription_id: str, package_config: dict, ai_features_config: Optional[dict]) -> None:
     """Run package analysis for a single workspace"""
     try:
         # Collect package files
@@ -165,15 +166,17 @@ def run_package_analysis_for_workspace(workspace, subscription_id: str, package_
         
         # Apply AI Foundry features if applicable
         if workspace.hub_type == 'ai-foundry':
-            ai_features = package_config.get('ai_features', {})
             feature_manager = HubFeatureManager()
-            ai_domains = feature_manager.get_feature_domains(
-                include_vscode=ai_features.get('include_vscode', False),
-                include_huggingface=ai_features.get('include_huggingface', False),
-                include_prompt_flow=ai_features.get('include_prompt_flow', False),
-                custom_fqdns=ai_features.get('custom_fqdns', '')
-            )
-            all_domains.update(ai_domains)
+            
+            # Handle AI features - could be None, from interactive mode, or from CLI flags
+            if ai_features_config:
+                ai_domains = feature_manager.get_feature_domains(
+                    include_vscode=ai_features_config.get('include_vscode', False),
+                    include_huggingface=ai_features_config.get('include_huggingface', False),
+                    include_prompt_flow=ai_features_config.get('include_prompt_flow', False),
+                    custom_fqdns=ai_features_config.get('custom_fqdns', '')
+                )
+                all_domains.update(ai_domains)
         
         # Generate output
         formatter_factory = OutputFormatterFactory()
