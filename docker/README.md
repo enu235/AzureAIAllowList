@@ -212,7 +212,9 @@ docker-compose run azure-ai-allowlist-cli python main.py \
   --output-file connectivity-reports/allowlist-output.json
 ```
 
-### 3. Windows PowerShell Users
+### 3. PowerShell 7 (pwsh) Users
+
+> Windows PowerShell 5.1 is deprecated; PowerShell 7 (`pwsh`, cross-platform) is the standard.
 
 ```bash
 # Generate PowerShell commands instead of bash
